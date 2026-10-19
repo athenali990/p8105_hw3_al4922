@@ -313,3 +313,168 @@ From the general trend, we can see the low mean activity level from minutes 0-36
 
 In terms of sex differences, in the "more than highschool" plot we see that females average slightly higher activity level throughout the day compared to the other two in which the male and female lines basically overlap. This suggests subtle differences in daytime activity distribution or volume among higher-educated cohorts.
 
+### Problem 3
+
+***Step 1: Data import, clean and tidy***
+```{r importciti}
+# 1. Import and clean 
+jan_2020_df <- read_csv(file = "./data/Jan 2020 Citi.csv",
+                        na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  mutate(year = "2020", month = "January")
+
+july_2020_df <- read_csv(file = "./data/July 2020 Citi.csv",
+                         na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  mutate(year = "2020", month = "July")
+
+jan_2024_df <- read_csv(file = "./data/Jan 2024 Citi.csv",
+                        na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  mutate(year = "2024", month = "January")
+
+july_2024_df <- read_csv(file = "./data/July 2024 Citi.csv",
+                         na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  mutate(year = "2024", month = "July")
+
+# 2. Check the imports
+print(jan_2020_df)
+print(july_2020_df)
+print(jan_2024_df)
+print(july_2024_df)
+
+# 3. Join them all into one master dataset 
+citibike_combined_df <- bind_rows(
+  jan_2020_df,
+  july_2020_df,
+  jan_2024_df,
+  july_2024_df
+)
+
+# Check the final combined dataset
+glimpse(citibike_combined_df[13000, ]) #Merged dataset clean and tidy, also nothing wrong with mutating in month and year
+```
+***Data Description***
+The resulting dataset contains `r `ncol(citibike_combined_df)` columns with the variables: ride_id, rideable_type, weekdays, duration, start_station, end_station, member_casual, month and year. There are `r nrow(citibike_combined_df)` total rows in the dataset with each row representing a ride. The year and month columns were added in for later use down the line and all rows and columns (which are same across 4 files) kept in 'merge'. 
+
+***Step 2: Make Table 1***
+```{r tableciti}
+# 1. Aggregate and pivot the data to show rides by year, month, and rider type
+rides_by_time_user <- citibike_combined_df %>%
+  drop_na(year, month, member_casual) %>%
+  count(year, month, member_casual) %>%
+  pivot_wider(
+    names_from = member_casual, 
+    values_from = n, 
+    values_fill = 0
+  )
+
+# 2. Check the tibble structure in the console
+print(rides_by_time_user)
+
+# 3. Create a reader-friendly formatted table using knitr::kable
+knitr::kable(
+  rides_by_time_user,
+  col.names = c("Year", "Month", "Casual", "Member"),
+  caption = "Table 1. Total Number of Citi Bike Rides by Year, Month, and Rider Type"
+)
+```
+***Table 1 comments:***
+In the table, July 2024 had the highest number of causal riders as well as member rides (`r rides_by_time_user %>% filter(year == 2024, month == "July") %>% pull(casual)` and `r rides_by_time_user %>% filter(year == 2024, month == "July") %>% pull(member)`, respectively). The member rides keeps increasing over time with the largest increase happening between 2024 Jan and July (`r (rides_by_time_user %>% filter(year == 2024, month == "July") %>% pull(member))- (rides_by_time_user %>% filter(year == 2024, month == "January") %>% pull(member))` increase in rides). The causal rides generally increase as well, however, there is a dip from July 2020 to January 2024 (`r rides_by_time_user %>% filter(year == 2020, month == "July") %>% pull(casual)` to `r rides_by_time_user %>% filter(year == 2024, month == "January") %>% pull(casual)`). 
+
+***Step 2: Make Table 2***
+```{r table2}
+# 1. Calculate the top 5 starting stations for July 2024
+top_start_stations_24 <- citibike_combined_df %>%
+  filter(year == 2024, month == "July") %>%
+  drop_na(start_station_name) %>%
+  count(start_station_name, sort = TRUE) %>%
+  slice_head(n = 5)
+
+# 2. Check the table in the console
+print(top_start_stations_24)
+
+# 3. Create a publication-ready formatted table using knitr::kable
+knitr::kable(
+  top_start_stations_24,
+  col.names = c("Starting Station Name", "Number of Rides"),
+  caption = "Table 2. Top 5 Most Popular Starting Stations for July 2024"
+)
+```
+***Step 3: Data Visualization 1***
+```{r durationplot}
+#Calculate median ride duration across year, month, and day of the week
+median_duration_df <- citibike_combined_df %>%
+  drop_na(year, month, weekdays, duration) %>%
+  group_by(year, month, weekdays) %>%
+  summarize(
+    median_duration = median(duration, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  # Optional: Reorder days of the week chronologically (Monday - Sunday)
+  mutate(
+    weekdays = factor(weekdays, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+  )
+
+# Check the summarized table
+print(median_duration_df)
+
+# Create the comparison plot
+median_duration_df %>%
+  ggplot(aes(x = weekdays, y = median_duration, fill = month)) +
+  geom_col(position = "dodge", alpha = 0.85) + # Side-by-side bars comparing months within days
+  facet_wrap(~ year, ncol = 2) +             # Separate panels for each year (2020 vs 2024)
+  labs(
+    title = "Median Ride Duration by Day of the Week, Month, and Year",
+    x = "Day of the Week",
+    y = "Median Ride Duration (Minutes)", #Duration assumed to be in minutes according to google search
+    fill = "Month"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
+    strip.text = element_text(face = "bold", size = 11),
+    legend.position = "bottom"
+  ) +
+  scale_fill_brewer(palette = "Set2")
+```
+***Plot 1 observations:***
+We see that across both plots, median ride duration, that point at which 50% of ride duration is lower or higher, is longer during July compared to January. This makes sense because people tend to be outside more and ride bikes more during the summer months when the weather is nice. But while the median duration for January hasn't changed much across the two years, median duration for July 2020 were much longer than duration for July 2024. This is probably because bike riding was a socially distanced activity you could do outside during the pandemic. But in general, people rode the citibikes at longer median durations in 2020. Over the weekdays the median duration is relatively stable but rising for the weekends. This change between weekdays and weekends is more dramatic in 2020 than 2024 which seems to speak to the limited activity choices in that year. 
+
+***Step 4: Data Visualization 2:***
+```{r plot2}
+# Filter and prepare the 2024 data
+duration_2024_df <- citibike_combined_df %>%
+  filter(year == 2024) %>%
+  drop_na(month, member_casual, rideable_type, duration) 
+
+# Check the prepared subset
+print(duration_2024_df)
+
+# Create the multi-panel distribution plot
+duration_2024_df %>%
+  ggplot(aes(x = rideable_type, y = duration, fill = member_casual)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) + 
+  facet_wrap(~ month, ncol = 2) +               
+  labs(
+    title = "Impact of Month, Membership Status, and Bike Type on Ride Duration (2024)",
+    x = "Bike Type",
+    y = "Ride Duration (Minutes)", #Duration assumed to be in minutes according to google search
+    fill = "Membership Status"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(face = "bold", size = 11),
+    legend.position = "bottom",
+    axis.text.x = element_text(face = "bold")
+  ) +
+  scale_fill_brewer(palette = "Paired") +
+  coord_cartesian(ylim = c(0, 50)) 
+```
+***Plot 2 Comments:***
+We see that while rides from members stay relatively stable across the months and bikes (with slight increase on electric bike in July), causal rides change by bike type and months. For casual rides, there is a increase in ride duration from January to July and from electric bike to classic bike. The change in weather across the months has been discussed previously, but here we also see a change between classic and electric bike probably due to price differences. 
+
+For non-members, there is a unlock fee for classic bikes and then you get the first 30 minutes free but for an electric bike you have to pay for every minute. That's why it's more worth-it to ride your full 30 min. for the classic bike and stay on the electric bike for as short a time as possible for casual riders. This explains the decrease in duration from classic boke to electric bike for casual riders across both months. 
+
+Finally between members, casual rides are generally longer than member rides across bike types and months. This is probably due to pricing as well with members getting a better deal from increased usage while casual riders limit usage (to avoid paying unlock fees) but try to get most of their 30 minutes for casual bikes and only travelling longer distances with the electric bike (otherwise walking or classic bike are probably better and cheaper options). 
