@@ -176,4 +176,56 @@ knitr::kable(
   col.names = c("Education Category", "Male", "Female"),
   caption = "Table 1. Number of Men and Women Across Education Categories"
 )
+
+male1 <- edu_by_sex %>%
+  filter(education == 'Less than high school') %>%
+  pull(Male)
+
+male2 <- edu_by_sex %>%
+  filter(education == 'High school equivalent') %>%
+  pull(Male)
+
+male3 <- edu_by_sex %>%
+  filter(education == 'More than high school') %>%
+  pull(Male)
+
+female1 <- edu_by_sex %>%
+  filter(education == 'Less than high school') %>%
+  pull(Female)
+
+female2 <- edu_by_sex %>%
+  filter(education == 'High school equivalent') %>%
+  pull(Female)
+
+female3  <- edu_by_sex %>%
+  filter(education == 'More than high school') %>%
+  pull(Female)
+
 ```
+**Comment on Male and Female by Education Cat Table:**
+From the table, we see that males and females with less than high school education are `r male1` and `r female1` respectively. males and females with high school equivalent education are `r male2` and `r female2` respectively and finally, males and females with higher than highs school education are `r male3` and `r female3` respectively. The dataset is mostly balanced between Male and Female with the greatest difference being `r male2-female2` between Male and Female who received high school equivalent education. 
+**Step 3: Visualization**
+```{r agedist_visualization}
+#Create the visualization for age distributions
+age_dist_plot <- merged_df %>%
+  drop_na(age, sex, education) %>%
+  ggplot(aes(x = education, y = age, fill = sex)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  labs(
+    title = "Age Distribution by Education Category and Sex",
+    x = "Education Category",
+    y = "Age (Years)",
+    fill = "Sex"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 20, hjust = 1), # Tilt text slightly if labels are long
+    legend.position = "bottom"
+  ) +
+  scale_fill_brewer(palette = "Set2")
+
+# Print the plot
+print(age_dist_plot)
+```
+**Comment on age distribution by education cat and sex plot:**
+The mean ages for each education category between the 2 sexes are quite similar. With the 'Less than high school' category having a mean female age of `r merged_df %>% filter(education == "Less than high school", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` and a mean male age of `r merged_df %>% filter(education == "Less than high school", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. Then in the 'High school equivalent' category, the mean female age is `r merged_df %>% filter(education == "High school equivalent", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` while the mean male age is `r merged_df %>% filter(education == "High school equivalent", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. Finally in the 'More than Highschool' category, the mean female age is `r merged_df %>% filter(education == "More than high school", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` while the mean male age is `r merged_df %>% filter(education == "More than high school", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. The range of ages goes from about 30 upwards to about 75 across education categories and sex. There is also a downwards trend in mean age observable in both sexes from the 'less than highschool' category until the youngest category of 'more than highschool'. 
