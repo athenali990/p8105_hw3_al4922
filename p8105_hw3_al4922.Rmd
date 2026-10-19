@@ -1,0 +1,35 @@
+---
+title: "p8105_hw3_al4922"
+output: github_document
+date: "2026-10-19"
+---
+
+```{r setup, include=FALSE}
+library (tidyverse)
+library(lubridate)
+library(p8105.datasets)
+
+```
+
+### Problem 1
+
+**Step 1: import and clean data**
+```{r import}
+data("ny_noaa") #load dataset into environment
+
+noaa_df <- ny_noaa #assign into df, no need to convert missing values to NA since it's 'pre-built' into file
+
+noaa_df = janitor::clean_names(noaa_df)
+
+print(noaa_df, n = 30) #shows that column names converted correctly and that first 16 rows contains no data
+
+```
+**Preliminary Data description:**
+This dataset contains `r ncol(noaa_df)` variables named: "id", "date", "prcp", "snow", "snwd", "tmax" and "tmin". In these 7 columns, it contains `r nrow(noaa_df)` observations with its weather station ID ("id"), date of observation ("date"), precipitation to tenths of mm ("prcp"), snowfall to mm ("snow"), snow depth to mm ("snwd"), and min max temperature to tenths of Celsius ("tmin", "tmax"). The extent to which missing data is an issue depends on what questions you want to answer as well as if the data missing can be inferred from other data in the same row. For example if you want to ask about precipitation levels for a certain time period in which the column 'prcp' is empty, then that would be a major issue. However, variables like 'snwd' could probably be inferred from 'snow'. Especially with `r nrow(noaa_df)` amount of entries even if you can't directly calculate 'snwd' given 'snow', you can just look at other entries with the same 'snow' value and copy it in. These are just two examples to show that missing data can be a very big issue or a relatively smaller one depending on your question and specific circunstances. 
+
+**Step 2: Manipulation and Visualizatoin**
+```{r mv}
+noaa_df <- ny_noaa %>%
+  mutate(month = month(date))
+```
+
