@@ -125,4 +125,55 @@ p2 <- noaa_df %>%
 # Combine them vertically using patchwork
 p1 / p2
 ```
+### Problem 2
+**Step 1: Load, tidy and merge**
+```{r import2}
+acc_df <- read_csv(file = "./data/nhanes_accel.csv",
+                   na = c("", "NA", "."))|>
+          janitor::clean_names()
 
+demo_df <- read_csv(file = "./data/nhanes_covar.csv",
+                    skip = 4,
+                    na = c("", "NA", "."))|>
+          janitor::clean_names() |>
+          drop_na() |>
+          filter(age >= 21)
+          
+print(acc_df)
+print(demo_df) #this is to check that the skip = 4, na conversions, drop_na, age < 21 dropped, clean_names all worked
+
+demo_df <- demo_df %>%
+  mutate(
+    # Convert sex: 1 = male, 2 = female
+    sex = factor(sex, 
+                 levels = c(1, 2), 
+                 labels = c("Male", "Female")),
+    
+    # Convert education: 1 = less than highschool, 2 = highschool equivalent, 3 = more than highschool
+    education = factor(education, 
+                       levels = c(1, 2, 3), 
+                       labels = c("Less than high school", 
+                                  "High school equivalent", 
+                                  "More than high school"))
+  )
+
+merged_df <- demo_df %>%
+  full_join(acc_df, by = "seqn")
+
+print(n = 25, merged_df) #shows properly merged, clean and tidy df ready for manipulation
+```
+**Step 2: Table Creation**
+```{r table}
+edu_by_sex <- merged_df %>%
+  drop_na(sex, education) %>%
+  count(education, sex) %>%
+  pivot_wider(names_from = sex, values_from = n, values_fill = 0)
+
+print(edu_by_sex) #Checks that table works
+
+knitr::kable(
+  edu_by_sex,
+  col.names = c("Education Category", "Male", "Female"),
+  caption = "Table 1. Number of Men and Women Across Education Categories"
+)
+```
