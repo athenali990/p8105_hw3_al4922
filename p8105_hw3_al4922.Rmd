@@ -13,8 +13,6 @@ library(p8105.datasets)
 
 ### Problem 1
 
-##OH questions: 1. Do we get rid of NA's? 2. guidance on indicating the extent to which missing data is issue - key points to look at/mention? 3. what does 'reasonable units' mean, do the 3 variables have to be converted to imperial? 4. what is 'structure' asking for 5. why is scatterplot not the best option? 6. When we look at 0-100 for snowfall, is it by the original or is it by new variables we created 6. when commenting on plot anything to not miss?
-
 **Step 1: import and clean data**
 ```{r import}
 data("ny_noaa") #load dataset into environment
@@ -23,7 +21,7 @@ noaa_df <- ny_noaa #assign into df, no need to convert missing values to NA sinc
 
 noaa_df = janitor::clean_names(noaa_df)
 
-print(noaa_df, n = 20) #shows that column names converted correctly and that first 16 rows contains no data
+print(noaa_df, n = 5) #shows that column names converted correctly and that first 16 rows contains no data
 
 ```
 **Preliminary Data description:**
@@ -41,7 +39,7 @@ noaa_df <- ny_noaa %>% #This creates separate variables for year, month and day 
          snow_cm = snow/10, #1 cm = 10 mm
          snwd_cm = snwd/10) #1 cm = 10 mm
 
-print(n = 20, noaa_df, width = Inf)#Checked to see that new columns (variables) made correctly. 
+print(n = 5, noaa_df, width = Inf)#Checked to see that new columns (variables) made correctly. 
 
 mc_snow <- noaa_df %>%
   count(snow_cm) %>%
@@ -125,7 +123,9 @@ p2 <- noaa_df %>%
 # Combine vertically using patchwork
 p1 / p2
 ```
+
 ### Problem 2
+
 **Step 1: Load, tidy and merge**
 ```{r import2}
 acc_df <- read_csv(file = "./data/nhanes_accel.csv",
@@ -204,6 +204,7 @@ female3  <- edu_by_sex %>%
 ```
 **Comment on Male and Female by Education Cat Table:**
 From the table, we see that males and females with less than high school education are `r male1` and `r female1` respectively. males and females with high school equivalent education are `r male2` and `r female2` respectively and finally, males and females with higher than highs school education are `r male3` and `r female3` respectively. The dataset is mostly balanced between Male and Female with the greatest difference being `r male2-female2` between Male and Female who received high school equivalent education. 
+
 **Step 3: Visualization**
 ```{r agedist_visualization}
 #Create the visualization for age distributions
@@ -230,18 +231,19 @@ print(age_dist_plot)
 **Comment on age distribution by education cat and sex plot:**
 The mean ages for each education category between the 2 sexes are quite similar. With the 'Less than high school' category having a mean female age of `r merged_df %>% filter(education == "Less than high school", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` and a mean male age of `r merged_df %>% filter(education == "Less than high school", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. Then in the 'High school equivalent' category, the mean female age is `r merged_df %>% filter(education == "High school equivalent", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` while the mean male age is `r merged_df %>% filter(education == "High school equivalent", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. Finally in the 'More than Highschool' category, the mean female age is `r merged_df %>% filter(education == "More than high school", sex == "Female") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)` while the mean male age is `r merged_df %>% filter(education == "More than high school", sex == "Male") %>% summarize(mean_age = mean(age, na.rm = TRUE)) %>% pull(mean_age) %>% round(1)`. The range of ages goes from about 30 upwards to about 75 across education categories and sex. There is also a downwards trend in mean age observable in both sexes from the 'less than highschool' category until the youngest category of 'more than highschool'. 
 #comment: inline code changed since wanted to try different ways, even though second inline code harder to read in rmd, it is faster to do.
+
 **Step 3 cont.: Visualization**
 ```{r activityviz}
 #Visualization of total activity over the day
 
-# 1. Aggregate across minute columns to create a total activity variable for each participant
+# Aggregate across minute columns to create a total activity variable for each participant
 # starts_with("min") targets all minute-by-minute activity columns automatically
 activity_summary <- merged_df %>%
   mutate(
     total_activity = rowSums(select(., starts_with("min")), na.rm = TRUE)
   )
 
-# 2. Create the plot comparing men to women, with age on the x-axis, 
+# Create the plot comparing men to women, with age on the x-axis, 
 # total activity on the y-axis, and faceted by education level
 activity_summary %>%
   drop_na(age, total_activity, sex, education) %>%
@@ -270,7 +272,7 @@ All three graphs generally follow a slight downwards trend as age increases but 
 ```{r 24h}
 # Visualization of activity of day but 24-hour time course
 
-# 1. Pivot minute-level accelerometer columns to long format while keeping demographic variables
+# Pivot minute-level accelerometer columns to long format while keeping demographic variables
 time_course_long <- merged_df %>%
   pivot_longer(
     cols = starts_with("min"), 
@@ -282,13 +284,13 @@ time_course_long <- merged_df %>%
     minute = readr::parse_number(minute_col)
   )
 
-# 2. Calculate the mean activity for each combination of education, sex, and minute
+# Calculate the mean activity for each combination of education, sex, and minute
 plot_data <- time_course_long %>%
   drop_na(education, sex, minute, activity) %>%
   group_by(education, sex, minute) %>%
   summarize(mean_activity = mean(activity, na.rm = TRUE), .groups = "drop")
 
-# 3. Create the three-panel time-course plot using minute on the x-axis
+# Create the three-panel time-course plot using minute on the x-axis
 plot_data %>%
   ggplot(aes(x = minute, y = mean_activity, color = sex, group = sex)) +
   geom_line(linewidth = 0.6, alpha = 0.8) +
@@ -317,7 +319,7 @@ In terms of sex differences, in the "more than highschool" plot we see that fema
 
 ***Step 1: Data import, clean and tidy***
 ```{r importciti}
-# 1. Import and clean 
+# Import and clean 
 jan_2020_df <- read_csv(file = "./data/Jan 2020 Citi.csv",
                         na = c("", "NA", ".")) |>
   janitor::clean_names() |>
@@ -338,13 +340,13 @@ july_2024_df <- read_csv(file = "./data/July 2024 Citi.csv",
   janitor::clean_names() |>
   mutate(year = "2024", month = "July")
 
-# 2. Check the imports
+# Check the imports
 print(jan_2020_df)
 print(july_2020_df)
 print(jan_2024_df)
 print(july_2024_df)
 
-# 3. Join them all into one master dataset 
+# Join them all into one master dataset 
 citibike_combined_df <- bind_rows(
   jan_2020_df,
   july_2020_df,
@@ -360,7 +362,7 @@ The resulting dataset contains `r `ncol(citibike_combined_df)` columns with the 
 
 ***Step 2: Make Table 1***
 ```{r tableciti}
-# 1. Aggregate and pivot the data to show rides by year, month, and rider type
+# Aggregate and pivot the data to show rides by year, month, and rider type
 rides_by_time_user <- citibike_combined_df %>%
   drop_na(year, month, member_casual) %>%
   count(year, month, member_casual) %>%
@@ -370,10 +372,10 @@ rides_by_time_user <- citibike_combined_df %>%
     values_fill = 0
   )
 
-# 2. Check the tibble structure in the console
+# Check the tibble structure in the console
 print(rides_by_time_user)
 
-# 3. Create a reader-friendly formatted table using knitr::kable
+# Create a reader-friendly formatted table using knitr::kable
 knitr::kable(
   rides_by_time_user,
   col.names = c("Year", "Month", "Casual", "Member"),
@@ -385,23 +387,24 @@ In the table, July 2024 had the highest number of causal riders as well as membe
 
 ***Step 2: Make Table 2***
 ```{r table2}
-# 1. Calculate the top 5 starting stations for July 2024
+# Calculate the top 5 starting stations for July 2024
 top_start_stations_24 <- citibike_combined_df %>%
   filter(year == 2024, month == "July") %>%
   drop_na(start_station_name) %>%
   count(start_station_name, sort = TRUE) %>%
   slice_head(n = 5)
 
-# 2. Check the table in the console
+#  Check the table in the console
 print(top_start_stations_24)
 
-# 3. Create a publication-ready formatted table using knitr::kable
+# Create a table using knitr::kable
 knitr::kable(
   top_start_stations_24,
   col.names = c("Starting Station Name", "Number of Rides"),
   caption = "Table 2. Top 5 Most Popular Starting Stations for July 2024"
 )
 ```
+
 ***Step 3: Data Visualization 1***
 ```{r durationplot}
 #Calculate median ride duration across year, month, and day of the week
